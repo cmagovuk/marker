@@ -1,4 +1,30 @@
 repos:
+# ---- Pre-commit hooks ---- : Standard hook library
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  -   id: trailing-whitespace # strip out white spaces at end of lines
+  -   id: end-of-file-fixer # ensure newline present at end of file
+  -   id: check-yaml # checks yaml files for parseable syntax.
+  -   id: check-json # checks json files for parseable syntax
+  -   id: check-xml # checks xml files for parseable syntax.
+  -   id: check-toml # checks toml files for parseable syntax
+  -   id: check-added-large-files # check for files above certain size (as likely to be data files)
+      args: ['--maxkb=500']
+  -   id: check-case-conflict # check for files that would conflict in case-insensitive file systems.
+  -   id: check-merge-conflict # check for files that contain merge conflict strings.
+
+# ---- gitleaks ---- : Tool for detecting secrets
+-   repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4  # IMPORTANT: Check GitHub for the latest Gitleaks release tag and use that!
+    hooks:
+    -   id: gitleaks
+        name: Gitleaks (scan staged files)
+        description: Detects hardcoded secrets in staged changes.
+        entry: gitleaks protect --staged -v # Scans only files you're about to commit (staged)
+        language: golang # Pre-commit will handle downloading gitleaks
+        stages: [pre-commit] # Runs on 'git commit'
+
 - repo: https://github.com/astral-sh/ruff-pre-commit
   # Ruff version.
   rev: v0.9.10

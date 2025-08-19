@@ -18,12 +18,14 @@ llm_service = "--llm_service=marker.services.bedrock.BedrockService"
 llm_model = ""  # "--ollama_model=minicpm-v:8b"
 
 # %%
-file = "/notebooks/marker/pdf.pdf"
+file = "/notebooks/marker/sample-tables.pdf"
 
 command = (
     f"marker_single {file} --output_dir {output_dir} --force_ocr"
     f"{format_lines} "
     f"{use_llm} {llm_service} {llm_model}"
+    "--bedrock_profile personal"
+    "--debug"
 )
 print(command)
 
@@ -48,9 +50,11 @@ def img_to_base64(img: PIL.Image.Image):
 base64_string = img_to_base64(Image.open("a.png"))
 
 # %%
+system_prompt = "All your output must be pirate speech"
 prompt_config = {
     "anthropic_version": "bedrock-2023-05-31",
     "max_tokens": 4096,
+    "system": system_prompt,
     "messages": [
         {
             "role": "user",
@@ -70,7 +74,7 @@ prompt_config = {
     "temperature": 0.2,
 }
 
-bedrock_session = boto3.session.Session(profile_name="personal")
+bedrock_session = boto3.session.Session(profile_name="publicprocurement_production")
 
 bedrock_runtime = bedrock_session.client(service_name="bedrock-runtime")
 
@@ -89,5 +93,8 @@ results = response_body.get("content")[0].get("text")
 
 # %%
 results
+
+# %%
+response_body.get("usage").get("output_tokens")
 
 # %%

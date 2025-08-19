@@ -1,16 +1,17 @@
-# %%
 import json
-from typing import Annotated, List
+from typing import Annotated, List, T
 
 import boto3
 import PIL
 from pydantic import BaseModel
 
+from marker.logger import get_logger
 from marker.schema.blocks import Block
 from marker.services import BaseService
 
+logger = get_logger()
 
-# %%
+
 class BedrockService(BaseService):
     bedrock_model_name: Annotated[
         str, "The name of the Bedrock model to use for the service."
@@ -41,13 +42,34 @@ class BedrockService(BaseService):
         bedrock_session = boto3.session.Session(profile_name=self.bedrock_profile)
         return bedrock_session.client(service_name="bedrock-runtime")
 
+    def validate_response(self, response_text: str, schema: type[T]) -> T:
+        response_text = response_text.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+
+        try:
+            # Try to parse as JSON first
+            out_schema = schema.model_validate_json(response_text)
+            out_json = out_schema.model_dump()
+            return out_json
+        except Exception:
+            try:
+                # Re-parse with fixed escapes
+                escaped_str = response_text.replace("\\", "\\\\")
+                out_schema = schema.model_validate_json(escaped_str)
+                return out_schema.model_dump()
+            except Exception:
+                return
+
     def __call__(
         self,
         prompt: str,
         image: PIL.Image.Image | List[PIL.Image.Image] | None,
         block: Block | None,
         response_schema: type[BaseModel],
-        max_retries: int | None = None,
+        max_retries: int | None = 0,
         timeout: int | None = None,
     ):
         print("called")
@@ -62,7 +84,6 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
 
         client = self.get_client()
         image_data = self.format_image_for_llm(image)
-
         messages = [
             {
                 "role": "user",
@@ -72,20 +93,37 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
                 ],
             }
         ]
+
+        prompt_config = prompt_config = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": self.max_tokens,
+            "system": system_prompt,
+            "messages": messages,
+            "temperature": 0,
+        }
+
+        body = json.dumps(prompt_config)
         total_tries = max_retries + 1
         for tries in range(1, total_tries + 1):
-            print(tries)
             try:
-                response = client.messages.create(
-                    system=system_prompt,
-                    model=self.bedrock_model_name,
-                    max_tokens=self.max_tokens,
-                    messages=messages,
-                    timeout=timeout,
+                response = client.invoke_model(
+                    body=body,
+                    modelId=self.bedrock_model_name,
+                    accept="application/json",
+                    contentType="application/json",
                 )
-                # Extract and validate response
-                response_text = response.content[0].text
-                return response_text
+
+                response_body = json.loads(response.get("body").read())
+
+                total_tokens = response_body.get("usage").get("output_tokens")
+                if block:
+                    block.update_metadata(
+                        llm_request_count=1, llm_tokens_used=total_tokens
+                    )
+                # Extract response
+                response_text = response_body.get("content")[0].get("text")
+                # logger.info(f"response: {response_text}")
+                return self.validate_response(response_text, response_schema)
             except Exception as e:
-                print(f"Error during Bedrock API call: {e}")
+                logger.error(f"Error during Bedrock API call: {e}")
                 break

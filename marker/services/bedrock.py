@@ -72,7 +72,6 @@ class BedrockService(BaseService):
         max_retries: int | None = 0,
         timeout: int | None = None,
     ):
-        print("called")
         schema_example = response_schema.model_json_schema()
         system_prompt = f"""
 Follow the instructions given by the user prompt.  You must provide your response in JSON format matching this schema:

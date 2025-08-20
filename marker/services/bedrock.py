@@ -73,6 +73,7 @@ class BedrockService(BaseService):
         timeout: int | None = None,
     ):
         schema_example = response_schema.model_json_schema()
+        # logger.info(schema_example)
         system_prompt = f"""
 Follow the instructions given by the user prompt.  You must provide your response in JSON format matching this schema:
 
@@ -93,6 +94,7 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
             }
         ]
 
+        # logger.info(f"\prompt: {prompt}\n")
         prompt_config = prompt_config = {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": self.max_tokens,
@@ -121,7 +123,7 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
                     )
                 # Extract response
                 response_text = response_body.get("content")[0].get("text")
-                # logger.info(f"response: {response_text}")
+                logger.info(f"\nresponse: {response_text}\n")
                 return self.validate_response(response_text, response_schema)
             except Exception as e:
                 logger.error(f"Error during Bedrock API call: {e}")

@@ -13,6 +13,8 @@
 # If you want to get some logs about what the LLM is doing, `bedrock.py` contains some commented logger lines that can return the prompt, the schema and the output of the LLM. You can uncomment them, restart the kernel and rerun the notebook. The log will include the pydantic schema in json, the prompt as it appears in the processor modules, and the output of the LLM, including a corrected version of the input and its rationale for the change.
 #
 # The `--force_ocr` parameter will convert all the pdf to image and perform OCR, ignoring any text already in the pdf. Uncomment the parameter if you want to try it.
+#
+# The `--debug` flag will generate images for each page of the pdf, indicating how the page was segmented in blocks and how those blocks have been labelled. This is really useful for debugging so I recommend having it activated. It will still generate the normal output in markdown.
 
 # %%
 import os

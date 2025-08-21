@@ -94,7 +94,7 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
             }
         ]
 
-        # logger.info(f"\prompt: {prompt}\n")
+        # logger.info(f"\nprompt: {prompt}\n")
         prompt_config = prompt_config = {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": self.max_tokens,
@@ -123,7 +123,7 @@ Respond only with the JSON schema, nothing else.  Do not include ```json, ```,  
                     )
                 # Extract response
                 response_text = response_body.get("content")[0].get("text")
-                logger.info(f"\nresponse: {response_text}\n")
+                # logger.info(f"\nresponse: {response_text}\n")
                 return self.validate_response(response_text, response_schema)
             except Exception as e:
                 logger.error(f"Error during Bedrock API call: {e}")
